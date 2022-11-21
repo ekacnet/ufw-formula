@@ -20,6 +20,10 @@ ufw:
       - nf_conntrack_netbios_ns
 
   sysctl:
+    sysctls:
+      net/ipv4/ip_forward: 1
+      net/ipv6/conf/default/forwarding: 1
+      net/ipv6/conf/all/forwarding: 1
     forwarding: 1
     rp_filter: 1
     accept_source_route: 0

@@ -2,6 +2,7 @@
 # File managed by Salt at <{{ source }}>.
 # Your changes will be overwritten.
 ########################################################################
+{%- set sysctls = ufw_sysctl.get('sysctls') %}
 {%- set forwarding = ufw_sysctl.get('forwarding', 0) %}
 {%- set rp_filter = ufw_sysctl.get('rp_filter', 1) %}
 {%- set accept_source_route = ufw_sysctl.get('accept_source_route', 0) %}
@@ -18,6 +19,11 @@
 # Configuration file for setting network variables. Please note these settings
 # override /etc/sysctl.conf. If you prefer to use /etc/sysctl.conf, please
 # adjust IPT_SYSCTL in /etc/default/ufw.
+{%- if sysctls is not none %}
+{%- for sysctl, value in sysctls.items() %}
+{{ sysctl }}={{ value }}
+{%- endfor %}
+{%- else %}
 
 # Uncomment this to allow this host to route packets between interfaces
 net/ipv4/ip_forward={{ forwarding }}
@@ -70,3 +76,4 @@ net/ipv6/conf/all/autoconf={{ ipv6_autoconf }}
 # Uncomment this to enable ipv6 privacy addressing
 net/ipv6/conf/default/use_tempaddr={{ use_tempaddr }}
 net/ipv6/conf/all/use_tempaddr={{ use_tempaddr }}
+{% endif %}
