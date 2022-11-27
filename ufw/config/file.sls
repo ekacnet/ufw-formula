@@ -40,6 +40,20 @@ ufw-sysctl-file-file-managed:
     - context:
         ufw_sysctl: {{ ufw.sysctl | json }}
 
+{% if ufw.get('applications_files') %}
+{% for filename, config in ufw.get('applications_files').items() %}
+ufw-file-app-{{ filename }}:
+  file.managed:
+    - name: /etc/ufw/applications.d/{{ filename }}
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+    - source: salt://ufw/files/application.tmpl.jinja
+    - context:
+        config: {{ config | json }}
+{% endfor %}
+{% else %}
 /etc/ufw/applications.d:
   file.recurse:
     - user: root
@@ -47,3 +61,4 @@ ufw-sysctl-file-file-managed:
     - file_mode: 644
     - clean: False
     - source: salt://ufw/files/applications.d
+{% endif %}

@@ -27,6 +27,7 @@ include:
     {%- set method  = 'deny' if deny else ('limit' if limit else 'allow') %}
     {%- set to_addr = app_details.get('to_addr', None) %}
     {%- set comment = app_details.get('comment', None) %}
+    {%- set require = app_details.get('require', None) %}
 
 {%- if from_addr is not none %}
 ufw-app-{{ method }}-{{ app_name }}-{{ from_addr }}:
@@ -45,6 +46,10 @@ ufw-app-{{ method }}-{{ app_name }}:
     # CentOS-6 throws an UTF-8 error
     {%- if comment is not none and salt['grains.get']('osfinger') != 'Debian-8' and salt['grains.get']('osfinger') != 'CentOS-6' %}
     - comment: '"{{ comment }}"'
+    {%- endif %}
+    {%- if require %}
+    - require:
+      - file: ufw-file-app-{{ require }}
     {%- endif %}
     {%- if enabled %}
     - listen_in:

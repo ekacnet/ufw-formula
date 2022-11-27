@@ -1,0 +1,9 @@
+{%- for app_name, app_config in config.items() %}
+{%- set app_title=app_config.get('title', app_name)%}
+{%- set app_description=app_config.get('description', "")%}
+{%- set app_ports=app_config.get('ports')%}
+[{{app_name}}]
+title={{app_title}}
+description={{app_description}}
+ports={{app_ports}}
+{%- endfor %}
