@@ -112,6 +112,16 @@ ufw:
     Postgresql:
       deny: true
 
+    RSPAMD-milter:
+      enabled: true
+
+  applications_files:
+    ufw-rspamd:
+      RSPAMD-milter:
+        title: Rspamd milter
+        description: Rspamd port for milter (mail filter) connection from STMP mail process
+        ports: 11332/tcp
+
   # Allow all traffic in on the specified interface
   interfaces:
     eth1:
