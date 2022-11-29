@@ -130,3 +130,10 @@ ufw:
   interfaces:
     eth1:
       comment: Honey pot
+    eth2:
+      deny: True
+      route: True
+      # By default deny rules are put are inserted at the top, but you can change this behavior by
+      # setting prepend to False
+      prepend: False
+      comment: Honey pot

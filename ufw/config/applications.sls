@@ -28,12 +28,22 @@ include:
     {%- set to_addr = app_details.get('to_addr', None) %}
     {%- set comment = app_details.get('comment', None) %}
     {%- set require = app_details.get('require', None) %}
+    {%- set interface = app_details.get('interface', None) %}
+    {%- set interface_out = app_details.get('interface_out', None) %}
+    {%- set route     = app_details.get('route', None) %}
+    {%- set prepend   = app_details.get('prepend', None) %}
+    {%- set app_name  = app_details.get('app_name', app_name) %}
 
-{%- if from_addr is not none %}
-ufw-app-{{ method }}-{{ app_name }}-{{ from_addr }}:
-{%- else %}
-ufw-app-{{ method }}-{{ app_name }}:
-{%- endif %}
+    {%- set n_uple = [from_addr, to_addr, interface, interface_out]|select("ne", None)|join('-') %}
+    {% if n_uple != '' %}
+    {% set n_uple = '-'+n_uple %}
+    {% endif %}
+    {%- if route %}
+    {%- set tmp = n_uple %}
+    {%- set n_uple = tmp +'-route' %}
+    {%- endif %}
+
+ufw-app-{{ method }}-{{ app_name }}{{ n_uple }}:
   ufw.{{ method }}:
     - app: '"{{ app_name }}"'
     {%- if from_addr is not none %}
@@ -46,6 +56,18 @@ ufw-app-{{ method }}-{{ app_name }}:
     # CentOS-6 throws an UTF-8 error
     {%- if comment is not none and salt['grains.get']('osfinger') != 'Debian-8' and salt['grains.get']('osfinger') != 'CentOS-6' %}
     - comment: '"{{ comment }}"'
+    {%- endif %}
+    {%- if interface is not none %}
+    - interface: {{ interface }}
+    {%- endif %}
+    {%- if interface_out is not none %}
+    - out_interface: {{ interface_out }}
+    {%- endif %}
+    {%- if prepend is not none %}
+    - prepend: {{ prepend }}
+    {%- endif %}
+    {%- if route is not none %}
+    - route: {{ route }}
     {%- endif %}
     {%- if require %}
     - require:

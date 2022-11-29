@@ -30,8 +30,20 @@ include:
     {%- set to_addr   = service_details.get('to_addr', None) %}
     {%- set to_port   = service_details.get('to_port', service_name) %}
     {%- set comment   = service_details.get('comment', None) %}
+    {%- set interface = service_details.get('interface', None) %}
+    {%- set interface_out = service_details.get('interface_out', None) %}
+    {%- set route     = service_details.get('route', None) %}
+    {%- set prepend   = service_details.get('prepend', None) %}
 
-ufw-svc-{{ method }}-{{ service_name }}-{{ from_addr }}:
+    {%- set n_uple = [from_addr, to_addr, interface, interface_out]|select("ne", None)|join('-') %}
+    {% if n_uple != '' %}
+    {% set n_uple = '-'+n_uple %}
+    {% endif %}
+    {%- if route %}
+    {%- set tmp = n_uple %}
+    {%- set n_uple = tmp +'-route' %}
+    {%- endif %}
+ufw-svc-{{ method }}-{{ service_name }}{{ n_uple }}:
   ufw.{{ method }}:
     {%- if protocol is not none %}
     - protocol: {{ protocol }}
@@ -51,6 +63,18 @@ ufw-svc-{{ method }}-{{ service_name }}-{{ from_addr }}:
     - comment: '"{{ comment }}"'
     {%- endif %}
     - to_port: "{{ to_port }}"
+    {%- if interface is not none %}
+    - interface: {{ interface }}
+    {%- endif %}
+    {%- if interface_out is not none %}
+    - out_interface: {{ interface_out }}
+    {%- endif %}
+    {%- if prepend is not none %}
+    - prepend: {{ prepend }}
+    {%- endif %}
+    {%- if route is not none %}
+    - route: {{ route }}
+    {%- endif %}
     {%- if enabled %}
     - listen_in:
       - cmd: reload-ufw

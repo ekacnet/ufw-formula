@@ -27,8 +27,23 @@ def _resolve(host):
     return socket.gethostbyname(host)
 
 
-def _as_rule(method, app, interface, protocol, from_addr, from_port, to_addr, to_port, comment):
-    cmd = [method]
+def _as_rule(method, app, interface, protocol, from_addr, from_port, to_addr, to_port, comment, route, prepend, out_interface):
+    cmd = []
+    if route:
+        cmd.append("route")
+
+    if prepend:
+        cmd.append("prepend")
+
+    cmd.append(method)
+    if interface is not None:
+        cmd.append("in")
+        cmd.append("on")
+        cmd.append(interface)
+    if out_interface is not None:
+        cmd.append("out")
+        cmd.append("on")
+        cmd.append(out_interface)
     if app is not None:
       cmd.append("from")
       if from_addr is not None:
@@ -44,10 +59,6 @@ def _as_rule(method, app, interface, protocol, from_addr, from_port, to_addr, to
 
       cmd.append("app")
       cmd.append(app)
-    elif interface is not None:
-        cmd.append("in")
-        cmd.append("on")
-        cmd.append(interface)
     else:
         if protocol is not None:
             cmd.append("proto")
@@ -81,7 +92,8 @@ def _as_rule(method, app, interface, protocol, from_addr, from_port, to_addr, to
 
 
 def _add_rule(method, name, app=None, interface=None, protocol=None,
-              from_addr=None, from_port=None, to_addr=None, to_port=None, comment=None):
+              from_addr=None, from_port=None, to_addr=None, to_port=None, comment=None,
+              route=False, prepend=False, out_interface=None):
 
     if app and app.strip('"\' ') == '*':
         app = None
@@ -89,14 +101,12 @@ def _add_rule(method, name, app=None, interface=None, protocol=None,
         to_port = None
 
     rule = _as_rule(method, app=app, interface=interface, protocol=protocol,
-                    from_addr=from_addr, from_port=from_port, to_addr=to_addr, to_port=to_port, comment=comment)
+                    from_addr=from_addr, from_port=from_port, to_addr=to_addr,
+                    to_port=to_port, comment=comment, route=route, prepend=prepend, out_interface=out_interface)
 
     try:
         out = __salt__['ufw.add_rule'](rule)
     except (CommandExecutionError, CommandNotFoundError) as e:
-        if method.startswith('insert 1 deny') and "Invalid position '1'" in e.message:
-            # This is probably the first rule to be added, so try again without "insert 1"
-            return _add_rule('deny', name, app, interface, protocol, from_addr, from_port, to_addr, to_port, comment)
         return _error(name, e.message)
 
     adds = False
@@ -119,9 +129,6 @@ def _add_rule(method, name, app=None, interface=None, protocol=None,
             return _test(name, "{0} would have been configured".format(name))
             break
 
-        if method.startswith('insert 1 deny') and "Invalid position '1'" in line:
-            # This is probably the first rule to be added, so try again without "insert 1"
-            return _add_rule('deny', name, app, interface, protocol, from_addr, from_port, to_addr, to_port, comment)
         return _error(name, line)
 
     if adds:
@@ -192,27 +199,37 @@ def default_outgoing(name, default):
 
 
 def deny(name, app=None, interface=None, protocol=None,
-         from_addr=None, from_port=None, to_addr=None, to_port=None, comment=None):
+         from_addr=None, from_port=None, to_addr=None, to_port=None, comment=None, route=False,
+         prepend=True, out_interface=None):
 
-    return _add_rule('insert 1 deny', name, app, interface, protocol, from_addr, from_port, to_addr, to_port, comment)
+    # Instead of doing insert 1 that is not working properly for IPv6 use prepend
+    # Doing so means that you don't have to do anything special with the rule failing
+    return _add_rule('deny', name, app, interface, protocol, from_addr, from_port, to_addr,
+                     to_port, comment, route, prepend, out_interface)
 
 
 def limit(name, app=None, interface=None, protocol=None,
-          from_addr=None, from_port=None, to_addr=None, to_port=None, comment=None):
+          from_addr=None, from_port=None, to_addr=None, to_port=None, comment=None, route=False,
+          prepend=False, out_interface=None):
 
-    return _add_rule('limit', name, app, interface, protocol, from_addr, from_port, to_addr, to_port, comment)
+    return _add_rule('limit', name, app, interface, protocol, from_addr, from_port, to_addr,
+                     to_port, comment, route, prepend, out_interface)
 
 
 def allow(name, app=None, interface=None, protocol=None,
-          from_addr=None, from_port=None, to_addr=None, to_port=None, comment=None):
+          from_addr=None, from_port=None, to_addr=None, to_port=None, comment=None, route=False,
+          prepend=False, out_interface=None):
 
-    return _add_rule('allow', name, app, interface, protocol, from_addr, from_port, to_addr, to_port, comment)
+    return _add_rule('allow', name, app, interface, protocol, from_addr, from_port, to_addr,
+                     to_port, comment, route, prepend, out_interface)
 
 
 def allowed(name, app=None, interface=None, protocol=None,
-            from_addr=None, from_port=None, to_addr=None, to_port=None, comment=None):
+            from_addr=None, from_port=None, to_addr=None, to_port=None, comment=None, route=False,
+            prepend=False, out_interface=None):
 
     """
     allow() is aliased to allowed() to maintain backwards compatibility.
     """
-    return allow(name, app, interface, protocol, from_addr, from_port, to_addr, to_port, comment)
+    return allow(name, app, interface, protocol, from_addr, from_port, to_addr, to_port, comment,
+                 route, prepend, out_interface)
